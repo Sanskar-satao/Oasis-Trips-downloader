@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Quest AI-A AI Study Helper</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            background: url(https://wallpaperbat.com/img/77770488-brave-browser-wallpaper.jpg) no-repeat center center fixed;
+            background-size: cover;
+            color: #fff;
+            display: flex;
+            flex-direction: row;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(12px);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 20px 10px;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 2;
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+        }
+
+        .sidebar h2 {
+            margin-bottom: 30px;
+            font-size: 1.3rem;
+            text-align: center;
+            width: 100%;
+            color: #4cafef;
+            text-shadow: 0 0 10px #2ecc71;
+        }
+
+        .sidebar .tab-btn {
+            padding: 12px 0px;
+            width: 100%;
+            margin-bottom: 12px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        .sidebar .tab-btn.active {
+            background: linear-gradient(135deg, #4cafef, #2ecc71);
+            box-shadow: 0 0 12px #4cafef, 0 0 15px #2ecc71;
+        }
+
+        .sidebar .tab-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* Content Area */
+        .content {
+            flex: 1;
+            margin-left: 350px;
+            padding: 40px 20px;
+            z-index: 1;
+            position: relative;
+            width: calc(100% - 220px);
+        }
+
+        /* Tabs animations */
+        .tab {
+            opacity: 0;
+            transform: translateX(30px);
+            pointer-events: none;
+            transition: all 0.4s ease;
+            position: absolute;
+            width: 100%;
+        }
+
+        .tab.active {
+            opacity: 1;
+            transform: translateX(0);
+            pointer-events: auto;
+            position: relative;
+        }
+
+        #particlesCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+
+        @keyframes float {
+            0% {
+                transform: translateY(0) translateX(0) scale(1);
+                opacity: 0.6;
+            }
+
+            50% {
+                transform: translateY(-400px) translateX(60px) scale(1.2);
+                opacity: 0.9;
+            }
+
+            100% {
+                transform: translateY(-800px) translateX(100px) scale(0.8);
+                opacity: 0;
+            }
+        }
+
+        .search-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        #searchInput {
+            width: 70%;
+            padding: 15px;
+            border-radius: 25px;
+            border: 2px solid #4cafef;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(5px);
+            font-size: 1.1rem;
+            color: #fff;
+            outline: none;
+            transition: 0.25s;
+        }
+
+        #searchInput:focus {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: #2ecc71;
+            box-shadow: 0 0 16px #65c7ff;
+        }
+
+        #searchButton {
+            padding: 15px 28px;
+            border-radius: 25px;
+            border: none;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            background: linear-gradient(270deg, #2ecc71, #4cafef, #f39c12, #2ecc71);
+            background-size: 600% 600%;
+            color: #fff;
+            transition: transform 0.3s, box-shadow 0.3s, background-position 0.3s;
+        }
+
+        #searchButton:hover {
+            animation: gradientBG 4s ease infinite, pulseBtn 2s infinite;
+            transform: scale(1.05);
+            box-shadow: 0 0 32px #2ecc7180;
+        }
+
+        #searchButton:focus {
+            animation: gradientBG 4s ease infinite, pulseBtn 2s infinite;
+            transform: scale(1.05);
+            box-shadow: 0 0 32px #2ecc7180;
+        }
+
+        @keyframes gradientBG {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        @keyframes pulseBtn {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        #resultsContainer {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 10px 0;
+            width: 100%;
+        }
+
+        .card {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 20px 25px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 25px rgba(255, 255, 255, 0.1);
+            transition: 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 0 40px rgba(76, 175, 239, 0.6), 0 0 25px rgba(46, 204, 113, 0.5);
+        }
+
+        .card img {
+            width: 120px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 12px;
+        }
+
+        .card-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card h2 {
+            margin: 0 0 8px 0;
+            font-size: 1.3rem;
+            text-shadow: 0 0 8px #fff, 0 0 4px #4cafef;
+        }
+
+        .card p {
+            font-size: 0.95rem;
+            line-height: 1.4;
+            color: #eaeaea;
+        }
+
+        .card a {
+            display: inline-block;
+            margin-top: 6px;
+            text-decoration: none;
+            color: #2ecc71;
+            font-weight: bold;
+        }
+
+        .card a:hover {
+            text-decoration: underline;
+        }
+
+        @media(max-width:700px) {
+            .sidebar {
+                width: 160px;
+            }
+
+            .content {
+                margin-left: 160px;
+                width: calc(100% - 160px);
+            }
+
+            .card {
+                flex-direction: column;
+            }
+
+            .card img {
+                width: 100%;
+                height: auto;
+            }
+
+            #searchInput,
+            #searchButton {
+                width: 100%;
+            }
+        }
+
+        /* Smooth fade-in animation */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Pulse animation for correct answers */
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.08);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        /* Certificate glow */
+        @keyframes glow {
+            0% {
+                box-shadow: 0 0 15px #2ecc71;
+            }
+
+            50% {
+                box-shadow: 0 0 30px #4cafef;
+            }
+
+            100% {
+                box-shadow: 0 0 15px #2ecc71;
+            }
+        }
+
+        .settings-box {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 18px;
+            border-radius: 15px;
+            backdrop-filter: blur(12px);
+            margin-bottom: 22px;
+            animation: fadeIn 0.8s ease;
+        }
+
+        .settings-box select,
+        .settings-box button {
+            margin: 6px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .settings-box select:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: scale(1.05);
+        }
+
+        .settings-box button {
+            background: linear-gradient(90deg, #2ecc71, #4cafef);
+            color: white;
+        }
+
+        .settings-box button:hover {
+            transform: scale(1.08);
+            box-shadow: 0 0 12px #4cafef;
+        }
+
+        #questionBox h3 {
+            margin: 18px 0;
+            text-shadow: 0 0 6px #4cafef;
+            animation: fadeIn 0.5s ease;
+        }
+
+        #optionsBox button {
+            display: block;
+            width: 100%;
+            margin: 10px 0;
+            padding: 14px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            animation: fadeIn 0.6s ease;
+        }
+
+        #optionsBox button:hover {
+            transform: translateX(6px);
+            background: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 0 12px #4cafef;
+        }
+
+        #nextBtn {
+            margin-top: 18px;
+            padding: 12px 24px;
+            border-radius: 14px;
+            background: linear-gradient(90deg, #2ecc71, #4cafef);
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s ease;
+            animation: fadeIn 0.8s ease;
+        }
+
+        #nextBtn:hover {
+            transform: scale(1.1) rotate(1deg);
+            box-shadow: 0 0 18px #2ecc71;
+        }
+
+        #scoreCard {
+            margin-top: 25px;
+            background: rgba(0, 0, 0, 0.55);
+            padding: 22px;
+            border-radius: 18px;
+            text-align: center;
+            backdrop-filter: blur(12px);
+            animation: fadeIn 1s ease;
+        }
+
+        #scoreCard button {
+            background: linear-gradient(90deg, #f39c12, #e74c3c);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            margin-top: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        #scoreCard button:hover {
+            transform: scale(1.08);
+            box-shadow: 0 0 14px #f39c12;
+        }
+
+        #certificate {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            animation: fadeIn 1s ease;
+        }
+
+        .certificate-box {
+            width: 70%;
+            background: #fff;
+            color: #000;
+            padding: 30px;
+            text-align: center;
+            border: 6px double #2ecc71;
+            border-radius: 22px;
+            animation: glow 3s infinite alternate;
+        }
+
+        .certificate-box h2 {
+            color: #2ecc71;
+            margin-bottom: 10px;
+        }
+
+        .certificate-box h3 {
+            color: #4cafef;
+            margin: 8px 0;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* 📖 Dictionary Tab Styling */
+        #dictTab {
+            text-align: center;
+            animation: fadeIn 0.5s ease-in-out;
+            padding: 20px;
+        }
+
+        /* Heading */
+        #dictTab h2 {
+            font-size: 28px;
+            font-weight: bold;
+            color: #4cafef;
+            text-shadow: 0 0 12px rgba(76, 175, 239, 0.7);
+            margin-bottom: 25px;
+        }
+
+        /* Search Box */
+        #dictTab .search-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        #dictInput {
+            padding: 14px 18px;
+            border-radius: 30px;
+            border: none;
+            outline: none;
+            font-size: 16px;
+            width: 300px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        #dictInput:focus {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+            transform: scale(1.03);
+        }
+
+        /* Search Button */
+        #dictBtn {
+            padding: 14px 22px;
+            border-radius: 30px;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            color: #fff;
+            font-weight: bold;
+            background: linear-gradient(135deg, #6a11cb, #2575fc, #2ecc71, #f39c12);
+            background-size: 400% 400%;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        #dictBtn:hover {
+            animation: gradientBG 4s ease infinite;
+            transform: scale(1.08);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        #dictBtn:focus {
+            animation: gradientBG 4s ease infinite;
+            transform: scale(1.08);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Results Container */
+        #dictResults {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 18px;
+        }
+
+        /* Each Meaning Card */
+        #dictResults div {
+            width: 100%;
+            max-width: 650px;
+            padding: 18px 22px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(15px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-align: left;
+            color: #fff;
+        }
+
+        #dictResults div:hover {
+            transform: translateY(-6px) scale(1.02);
+            box-shadow: 0 12px 30px rgba(76, 175, 239, 0.6), 0 8px 20px rgba(46, 204, 113, 0.5);
+        }
+
+        /* Definition Header */
+        #dictResults h3 {
+            font-size: 20px;
+            color: #2ecc71;
+            margin-bottom: 10px;
+            text-transform: capitalize;
+        }
+
+        /* Definition Text */
+        #dictResults p {
+            font-size: 16px;
+            line-height: 1.5;
+            color: #e0e0e0;
+        }
+
+        /* Example text */
+        #dictResults em {
+            color: #f39c12;
+        }
+
+        /* Synonyms */
+        #dictResults strong {
+            color: #4cafef;
+        }
+
+        /* Logo Opening Animation */
+        #logoOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: background 1.5s ease;
+        }
+
+        #logoTitle {
+            font-size: 5rem;
+            color: #4cafef;
+            text-shadow: 0 0 20px #4cafef, 0 0 30px #2ecc71;
+            transform-origin: center center;
+            transition: transform 1.2s ease, opacity 0.5s ease;
+        }
+
+        .editor-container {
+            backdrop-filter: blur(15px);
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 15px;
+            box-shadow: 0 4px 20px rgba(255, 255, 255, 0.1);
+            width: 90%;
+            max-width: 900px;
+            margin: 20px auto;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+
+        .toolbar button,
+        .toolbar select,
+        .toolbar input[type="color"] {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            border-radius: 6px;
+            padding: 6px 10px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .toolbar button:hover,
+        .toolbar select:hover {
+            background: rgba(255, 255, 255, 0.35);
+        }
+
+        #editor {
+            min-height: 400px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 15px;
+            color: white;
+            outline: none;
+            font-size: 16px;
+            line-height: 1.6;
+            box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.1);
+        }
+
+        #editor:empty:before {
+            content: attr(placeholder);
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .toolbar button.active {
+            background: rgba(255, 255, 255, 0.5);
+            box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.4);
+        }
+
+        .toolbar select:focus,
+        .toolbar input[type="color"]:focus,
+        .toolbar button:focus {
+            outline: none;
+            transform: scale(1.05);
+            box-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
+        }
+
+        .toolbar select {
+            background: rgba(255, 255, 255, 0.25);
+            color: white;
+            border-radius: 6px;
+            border: none;
+            padding: 6px 10px;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            transition: 0.2s;
+        }
+
+        .toolbar select option {
+            background: rgba(30, 30, 30, 0.9);
+            color: white;
+        }
+
+        /* Profile Tab Styling */
+        #profileTab {
+            padding: 25px;
+            animation: fadeIn 0.6s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Profile Form Container */
+        #profileTab .settings-box {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            padding: 20px 25px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            transition: 0.3s ease;
+        }
+
+        /* Inputs inside Profile */
+        #profileTab .settings-box input {
+            width: 100%;
+            padding: 12px 15px;
+            margin: 8px 0;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            outline: none;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        #profileTab .settings-box input:focus {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #2ecc71;
+            box-shadow: 0 0 12px #4cafef80;
+        }
+
+        /* Save Button */
+        #profileTab .settings-box button {
+            margin-top: 12px;
+            padding: 12px 20px;
+            border-radius: 15px;
+            border: none;
+            font-weight: bold;
+            background: linear-gradient(135deg, #2ecc71, #4cafef);
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #profileTab .settings-box button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 18px #2ecc71, 0 0 18px #4cafef;
+        }
+
+        /* Display Saved Profile */
+        #profileDisplay {
+            background: rgba(255, 255, 255, 0.06);
+            padding: 18px 22px;
+            border-radius: 18px;
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+            animation: fadeIn 0.6s ease;
+            color: #fff;
+        }
+
+        #profileDisplay h3 {
+            margin-bottom: 12px;
+            color: #4cafef;
+            text-shadow: 0 0 6px #2ecc71;
+        }
+
+        #profileDisplay p {
+            margin: 4px 0;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            color: #e0e0e0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="logoOverlay">
+        <h1 id="logoTitle">📖 Quest-AI</h1>
+    </div>
+
+    <canvas id="particlesCanvas"></canvas>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h2>📖 Quest-AI</h2>
+        <div class="tab-btn active" data-tab="homeTab">🏠 Home</div>
+        <div class="tab-btn" data-tab="aiTab">📚 Results</div>
+        <div class="tab-btn" data-tab="notesTab">📝 Notes</div>
+        <div class="tab-btn" data-tab="quizTab">❓ Quiz</div>
+        <div class="tab-btn" data-tab="dictTab">📖 Dictionary</div>
+        <div class="tab-btn" data-tab="profileTab">👤 Profile</div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content">
+        <!-- Home Tab -->
+        <div id="homeTab" class="tab active">
+            <div class="search-container">
+                <input type="text" id="searchInput" placeholder="Search any topic for study...">
+                <button id="searchButton">Search</button>
+            </div>
+        </div>
+
+        <!-- Results Tab -->
+        <div id="aiTab" class="tab">
+            <div id="resultsContainer"></div>
+        </div>
+
+        <!-- Notes Tab -->
+        <div id="notesTab" class="tab">
+            <div id="notes" class="section">
+                <div class="editor-container">
+                    <div class="toolbar">
+                        <select id="fontName">
+                            <option value="Arial">Arial</option>
+                            <option value="Times New Roman">Times New Roman</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Verdana">Verdana</option>
+                        </select>
+                        <select id="fontSize">
+                            <option value="1">Small</option>
+                            <option value="3" selected>Normal</option>
+                            <option value="5">Large</option>
+                            <option value="7">Huge</option>
+                        </select>
+                        <button onclick="format('bold')"><b>B</b></button>
+                        <button onclick="format('italic')"><i>I</i></button>
+                        <button onclick="format('underline')"><u>U</u></button>
+                        <button onclick="format('insertOrderedList')">1.</button>
+                        <button onclick="format('insertUnorderedList')">•</button>
+                        <button onclick="format('justifyLeft')">⯇</button>
+                        <button onclick="format('justifyCenter')">≡</button>
+                        <button onclick="format('justifyRight')">⯈</button>
+                        <input type="color" id="fontColor" title="Text Color">
+                        <button onclick="undoEdit()">↺</button>
+                        <button onclick="redoEdit()">↻</button>
+                        <button onclick="downloadNotes()">💾</button>
+                    </div>
+
+                    <div id="editor" contenteditable="true" placeholder="Start typing your notes..."></div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Quiz Mode HTML -->
+        <div id="quizTab" class="tab">
+            <h2>❓ Quiz Mode</h2>
+            <div class="settings-box">
+                <label>Subject:</label>
+                <select id="categorySelect">
+                    <option value="">Any Category</option>
+                    <option value="9">General Knowledge</option>
+                    <option value="17">Science & Nature</option>
+                    <option value="18">Computers</option>
+                    <option value="21">Sports</option>
+                    <option value="23">History</option>
+                    <option value="27">Animals</option>
+                    <option value="22">Geography</option>
+                    <!-- add more categories from OpenTDB API docs -->
+                </select>
+
+                <label>Number of Questions:</label>
+                <select id="numSelect">
+                    <option value="5">5</option>
+                    <option value="10" selected>10</option>
+                    <option value="15">15</option>
+                </select>
+
+                <label>Difficulty:</label>
+                <select id="difficultySelect">
+                    <option value="" selected>Any</option>
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                </select>
+
+                <label>Marks per Question:</label>
+                <select id="marksSelect">
+                    <option value="1" selected>1</option>
+                    <option value="2">2</option>
+                    <option value="5">5</option>
+                </select>
+
+                <button id="startQuizBtn">Start Quiz</button>
+            </div>
+
+            <div id="progressContainer"
+                style="width:100%; background: rgba(255,255,255,0.1); border-radius:12px; margin-bottom:12px;">
+                <div id="progressBar" style="width:0%; height:12px; background:#2ecc71; border-radius:12px;"></div>
+            </div>
+
+
+            <div id="questionBox"></div>
+            <div id="optionsBox"></div>
+            <button id="nextBtn" style="display:none;">Next</button>
+
+            <div id="scoreCard" class="hidden">
+                <h3 id="finalScore"></h3>
+                <p id="percentage"></p>
+                <p id="resultMsg"></p>
+            </div>
+
+            <div id="certificate" class="hidden">
+                <div class="certificate-box">
+                    <h2>🎓 Certificate of Completion</h2>
+                    <h3 id="studentName"></h3>
+                    <p>Subject: <span id="certSubject"></span></p>
+                    <p>Score: <span id="certScore"></span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dictionary Tab -->
+        <div id="dictTab" class="tab">
+            <h2>📖 Dictionary</h2>
+            <div class="search-container">
+                <input type="text" id="dictInput" placeholder="Enter a word...">
+                <button id="dictBtn">Search</button>
+            </div>
+            <div id="dictResults" style="margin-top:20px;"></div>
+        </div>
+
+        <!-- Profile Tab -->
+        <div id="profileTab" class="tab">
+            <h2>👤 Profile</h2>
+            <div class="settings-box">
+                <label>Name:</label>
+                <input type="text" id="profileName" placeholder="Enter your name">
+                <label>Email:</label>
+                <input type="email" id="profileEmail" placeholder="Enter your email">
+                <label>Favorite Subject:</label>
+                <input type="text" id="profileSubject" placeholder="Enter favorite subject">
+                <button id="saveProfileBtn">Save Profile</button>
+            </div>
+
+            <div id="profileDisplay" style="margin-top:20px;">
+                <h3>Saved Profile:</h3>
+                <p id="displayName"></p>
+                <p id="displayEmail"></p>
+                <p id="displaySubject"></p>
+            </div>
+        </div>
+
+
+    </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('particlesCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let particles = [];
+        const particleCount = 80;
+        const colors = [];
+
+        function random(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        // Resize canvas to fit window
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Initialize particles
+        for (let i = 0; i < particleCount; i++) {
+            particles.push({
+                x: random(0, canvas.width),
+                y: random(0, canvas.height),
+                radius: random(4, 8),
+                speedY: random(0.2, 1),
+                speedX: random(-0.2, 0.2),
+                color: `hsl(${Math.random() * 360}, 80%, 70%)`,
+                opacity: random(0.3, 0.7),
+            });
+        }
+
+        // Animate particles
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            particles.forEach(p => {
+                // Move particle
+                p.y -= p.speedY;
+                p.x += p.speedX;
+
+                // Reset when off-screen
+                if (p.y < -p.radius) {
+                    p.y = canvas.height + p.radius;
+                    p.x = random(0, canvas.width);
+                }
+                if (p.x < -p.radius) p.x = canvas.width + p.radius;
+                if (p.x > canvas.width + p.radius) p.x = -p.radius;
+
+                // Draw particle
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.opacity;
+                ctx.fill();
+                ctx.closePath();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+
+
+        // Tab Switching
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        tabButtons.forEach(btn => btn.addEventListener('click', () => {
+            const activeTab = document.querySelector('.tab.active');
+            const newTab = document.getElementById(btn.dataset.tab);
+            if (activeTab === newTab) return;
+
+            activeTab.classList.remove('active');
+            newTab.classList.add('active');
+
+            tabButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }));
+
+        function switchTabInstant(tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.id === tabId));
+            tabButtons.forEach(b => b.classList.toggle('active', b.dataset.tab === tabId));
+        }
+
+        // Wikipedia Search
+        async function searchWikiMultiple(query) {
+            const url = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*`;
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                return data.query.search.slice(0, 6);
+            } catch (err) {
+                console.error(err);
+                return [];
+            }
+        }
+
+        async function fetchSummary(title) {
+            const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
+            try {
+                const res = await fetch(url);
+                return await res.json();
+            } catch {
+                return null;
+            }
+        }
+
+        async function handleSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) return alert("Please enter a search query");
+
+            const resultsContainer = document.getElementById('resultsContainer');
+            resultsContainer.innerHTML = '';
+            const searchResults = await searchWikiMultiple(query);
+
+            const fragment = document.createDocumentFragment();
+            for (const result of searchResults) {
+                const summary = await fetchSummary(result.title);
+                if (summary) {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                    ${summary.thumbnail ? `<img src="${summary.thumbnail.source}" alt="${summary.title}">` : ''}
+                    <div class="card-content">
+                        <h2>${summary.title}</h2>
+                        <p>${summary.extract}</p>
+                        <a href="${summary.content_urls.desktop.page}" target="_blank">Read more on Wikipedia</a>
+                    </div>`;
+                    fragment.appendChild(card);
+                }
+            }
+            resultsContainer.appendChild(fragment);
+            switchTabInstant('aiTab');
+        }
+
+        document.getElementById('searchButton').addEventListener('click', handleSearch);
+        document.getElementById('searchInput').addEventListener('keypress', e => {
+            if (e.key === 'Enter') handleSearch();
+        });
+
+        // Quiz Logic
+        let quizData = [], currentQ = 0, score = 0, marksPerQ = 1, subjectName = "";
+        const questionBox = document.getElementById("questionBox");
+        const optionsBox = document.getElementById("optionsBox");
+        const nextBtn = document.getElementById("nextBtn");
+        const startBtn = document.getElementById("startQuizBtn");
+        const scoreCard = document.getElementById("scoreCard");
+        const certificate = document.getElementById("certificate");
+
+        const decodeHTML = str => {
+            const txt = document.createElement("textarea");
+            txt.innerHTML = str;
+            return txt.value;
+        };
+
+        const shuffleOptions = (correct, incorrect) => {
+            const options = [...incorrect];
+            options.splice(Math.floor(Math.random() * (options.length + 1)), 0, correct);
+            return options;
+        };
+
+        async function fetchQuiz() {
+            const categorySelect = document.getElementById("categorySelect");
+            const category = categorySelect.value;
+            subjectName = categorySelect.options[categorySelect.selectedIndex].text;
+            const numQ = document.getElementById("numSelect").value;
+            marksPerQ = parseInt(document.getElementById("marksSelect").value);
+            const difficulty = document.getElementById("difficultySelect").value;
+
+            let apiUrl = `https://opentdb.com/api.php?amount=${numQ}&type=multiple`;
+            if (category) apiUrl += `&category=${category}`;
+            if (difficulty) apiUrl += `&difficulty=${difficulty}`;
+
+            try {
+                const res = await fetch(apiUrl);
+                const data = await res.json();
+                quizData = data.results.map(q => ({
+                    question: decodeHTML(q.question),
+                    options: shuffleOptions(decodeHTML(q.correct_answer), q.incorrect_answers.map(decodeHTML)),
+                    answer: decodeHTML(q.correct_answer)
+                }));
+                startQuiz();
+            } catch (e) {
+                console.error("Quiz API error:", e);
+                questionBox.innerHTML = `<p style="color:red;">❌ Failed to load quiz. Check your internet and try again.</p>`;
+            }
+        }
+
+        function startQuiz() {
+            currentQ = score = 0;
+            scoreCard.classList.add("hidden");
+            certificate.classList.add("hidden");
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const q = quizData[currentQ];
+            questionBox.innerHTML = `<h3>Q${currentQ + 1}. ${q.question}</h3>`;
+            optionsBox.innerHTML = '';
+            q.options.forEach(opt => {
+                const btn = document.createElement("button");
+                btn.innerText = opt;
+                btn.onclick = () => checkAnswer(opt, btn);
+                optionsBox.appendChild(btn);
+            });
+            nextBtn.style.display = "none";
+        }
+
+        function checkAnswer(selected, btn) {
+            const correct = quizData[currentQ].answer;
+            btn.style.background = selected === correct ? "#2ecc71" : "#e74c3c";
+            if (selected === correct) score += marksPerQ;
+
+            Array.from(optionsBox.children).forEach(b => {
+                b.disabled = true;
+                if (b.innerText === correct) b.style.background = "#2ecc71";
+            });
+            nextBtn.style.display = "block";
+        }
+
+        nextBtn.addEventListener("click", () => {
+            currentQ++;
+            currentQ < quizData.length ? loadQuestion() : finishQuiz();
+        });
+
+        function finishQuiz() {
+            questionBox.innerHTML = "<h3>✅ Quiz Completed!</h3>";
+            optionsBox.innerHTML = "";
+            nextBtn.style.display = "none";
+
+            const totalMarks = quizData.length * marksPerQ;
+            const percentage = Math.round((score / totalMarks) * 100);
+
+            document.getElementById("finalScore").innerText = `Score: ${score} / ${totalMarks}`;
+            document.getElementById("percentage").innerText = `Percentage: ${percentage}%`;
+            document.getElementById("resultMsg").innerText = percentage >= 50 ? "🎉 You Passed!" : "😢 Try Again!";
+            scoreCard.classList.remove("hidden");
+
+            setTimeout(() => {
+                const name = prompt("Enter your name for the certificate:");
+                if (name) {
+                    document.getElementById("studentName").innerText = name;
+                    document.getElementById("certSubject").innerText = subjectName;
+                    document.getElementById("certScore").innerText = `${score} Marks`;
+                    certificate.classList.remove("hidden");
+                }
+            }, 500);
+        }
+
+        startBtn.addEventListener("click", fetchQuiz);
+
+        const progressBar = document.getElementById("progressBar");
+
+        function updateProgress() {
+            const percent = ((currentQ + 1) / quizData.length) * 100;
+            progressBar.style.width = percent + "%";
+        }
+
+        // Call this in loadQuestion:
+        function loadQuestion() {
+            const q = quizData[currentQ];
+            questionBox.innerHTML = `<h3>Q${currentQ + 1}. ${q.question}</h3>`;
+            optionsBox.innerHTML = '';
+            q.options.forEach(opt => {
+                const btn = document.createElement("button");
+                btn.innerText = opt;
+                btn.onclick = () => checkAnswer(opt, btn);
+                optionsBox.appendChild(btn);
+            });
+            nextBtn.style.display = "none";
+            updateProgress();
+        }
+
+        // Profile functionality
+        const profileName = document.getElementById("profileName");
+        const profileEmail = document.getElementById("profileEmail");
+        const profileSubject = document.getElementById("profileSubject");
+        const displayName = document.getElementById("displayName");
+        const displayEmail = document.getElementById("displayEmail");
+        const displaySubject = document.getElementById("displaySubject");
+        const saveProfileBtn = document.getElementById("saveProfileBtn");
+
+        // Load profile on page load
+        window.addEventListener("load", () => {
+            const savedProfile = JSON.parse(localStorage.getItem("userProfile"));
+            if (savedProfile) {
+                profileName.value = savedProfile.name;
+                profileEmail.value = savedProfile.email;
+                profileSubject.value = savedProfile.subject;
+                displayProfile(savedProfile);
+            }
+        });
+
+        function displayProfile(profile) {
+            displayName.innerText = `Name: ${profile.name}`;
+            displayEmail.innerText = `Email: ${profile.email}`;
+            displaySubject.innerText = `Favorite Subject: ${profile.subject}`;
+        }
+
+        // Save profile
+        saveProfileBtn.addEventListener("click", () => {
+            const profile = {
+                name: profileName.value.trim(),
+                email: profileEmail.value.trim(),
+                subject: profileSubject.value.trim()
+            };
+            localStorage.setItem("userProfile", JSON.stringify(profile));
+            displayProfile(profile);
+            alert("Profile saved successfully!");
+        });
+
+        //=========dictionary===========//
+
+        // Dictionary Function
+        async function fetchDictionary(word) {
+            const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`;
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error("Word not found");
+                const data = await res.json();
+                displayDictionary(data);
+            } catch (err) {
+                document.getElementById("dictResults").innerHTML =
+                    `<p style="color:red;">❌ ${err.message}</p>`;
+            }
+        }
+
+        function displayDictionary(data) {
+            const resultBox = document.getElementById("dictResults");
+            resultBox.innerHTML = "";
+
+            data[0].meanings.forEach(meaning => {
+                const part = meaning.partOfSpeech;
+                meaning.definitions.forEach(def => {
+                    const div = document.createElement("div");
+                    div.style.marginBottom = "15px";
+                    div.style.padding = "12px";
+                    div.style.borderRadius = "10px";
+                    div.style.background = "rgba(255,255,255,0.08)";
+                    div.style.backdropFilter = "blur(8px)";
+                    div.innerHTML = `
+                <h3 style="color:#4cafef;">${part}</h3>
+                <p><strong>Definition:</strong> ${def.definition}</p>
+                ${def.example ? `<p><em>Example:</em> ${def.example}</p>` : ""}
+                ${def.synonyms && def.synonyms.length ?
+                            `<p><strong>Synonyms:</strong> ${def.synonyms.join(", ")}</p>` : ""}
+            `;
+                    resultBox.appendChild(div);
+                });
+            });
+        }
+
+        // Event Listeners
+        document.getElementById("dictBtn").addEventListener("click", () => {
+            const word = document.getElementById("dictInput").value.trim();
+            if (word) fetchDictionary(word);
+        });
+        document.getElementById("dictInput").addEventListener("keypress", e => {
+            if (e.key === "Enter") {
+                const word = e.target.value.trim();
+                if (word) fetchDictionary(word);
+            }
+        });
+
+        window.addEventListener("load", () => {
+            const overlay = document.getElementById("logoOverlay");
+            const logo = document.getElementById("logoTitle");
+            const sidebarLogoContainer = document.querySelector(".sidebar h2");
+
+            // Step 1: initial scale and fade-in
+            logo.style.opacity = 0;
+            logo.style.transform = "scale(2)";
+            setTimeout(() => {
+                logo.style.opacity = 1;
+                logo.style.transform = "scale(1.5)";
+            }, 100);
+
+            // Step 2: Move logo to sidebar
+            setTimeout(() => {
+                const logoRect = logo.getBoundingClientRect();
+                const sidebarRect = sidebarLogoContainer.getBoundingClientRect();
+
+                const translateX = sidebarRect.left + sidebarRect.width / 2 - (logoRect.left + logoRect.width / 2);
+                const translateY = sidebarRect.top + sidebarRect.height / 2 - (logoRect.top + logoRect.height / 2);
+
+                const scale = sidebarRect.height / logoRect.height; // scale to fit sidebar
+
+                logo.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+                overlay.style.background = "rgba(0,0,0,0.3)";
+            }, 2000);
+
+            // Step 3: finalize - remove overlay and show sidebar logo
+            setTimeout(() => {
+                overlay.style.display = "none";
+                logo.style.transition = "none";
+                logo.style.transform = "none";
+                sidebarLogoContainer.innerText = "📖 Quest-AI"; // final logo in sidebar
+            }, 3500);
+        });
+
+        const editor = document.getElementById("editor");
+        const fontName = document.getElementById("fontName");
+        const fontSize = document.getElementById("fontSize");
+        const fontColor = document.getElementById("fontColor");
+        const toolbarButtons = document.querySelectorAll(".toolbar button");
+
+        // Restore notes
+        editor.innerHTML = localStorage.getItem("notesContent") || "";
+
+        // Auto-save notes
+        editor.addEventListener("input", () => {
+            localStorage.setItem("notesContent", editor.innerHTML);
+        });
+
+        // Fix dropdown focus loss (keep cursor active after selection)
+        function keepFocusAfterSelect(select, command) {
+            select.addEventListener("change", (e) => {
+                const value = e.target.value;
+                editor.focus();
+                document.execCommand(command, false, value);
+                updateActiveButtons();
+            });
+        }
+
+        // Apply fix for each dropdown
+        keepFocusAfterSelect(fontName, "fontName");
+        keepFocusAfterSelect(fontSize, "fontSize");
+
+        // Color picker
+        fontColor.addEventListener("input", (e) => {
+            const value = e.target.value;
+            editor.focus();
+            document.execCommand("foreColor", false, value);
+        });
+
+        // Buttons
+        function format(command, value = null) {
+            document.execCommand(command, false, value);
+            editor.focus();
+            updateActiveButtons();
+        }
+
+        // Undo / Redo
+        function undoEdit() { document.execCommand("undo"); editor.focus(); }
+        function redoEdit() { document.execCommand("redo"); editor.focus(); }
+
+        // Download as .txt
+        function downloadNotes() {
+            const text = editor.innerText;
+            const blob = new Blob([text], { type: "text/plain" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "MyNotes.txt";
+            link.click();
+        }
+
+        // Highlight active formatting buttons
+        function updateActiveButtons() {
+            toolbarButtons.forEach(btn => {
+                const cmd = btn.getAttribute("onclick")?.match(/format\('(.+?)'/)?.[1];
+                if (cmd) {
+                    const isActive = document.queryCommandState(cmd);
+                    btn.classList.toggle("active", isActive);
+                }
+            });
+        }
+
+        // Keep active states in sync
+        editor.addEventListener("keyup", updateActiveButtons);
+        editor.addEventListener("mouseup", updateActiveButtons);
+
+    </script>
+
+</body>
+
+</html>
